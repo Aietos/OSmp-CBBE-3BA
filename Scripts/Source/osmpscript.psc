@@ -12,6 +12,9 @@ bool secondPartnerIsFemale = false
 
 bool undressAtAnimStart = true
 
+bool partnerHadSMP = false
+bool secondPartnerHadSMP = false
+
 event oninit()
 	ostim = OUtils.GetOStim()
 	registerformodevent("ostim_start", "OstimStart")
@@ -41,8 +44,11 @@ event OstimStart(string eventname, string strarg, float numarg, form sender)
 	playerIsFemale = ostim.isFemale(PlayerRef)
 	partnerIsFemale = ostim.isFemale(partner)
 
+	partnerHadSMP = isActorSMP(partner)
+
 	if secondPartner != none
 		secondPartnerIsFemale = ostim.isFemale(secondPartner)
+		secondPartnerHadSMP = isActorSMP(secondPartner)
 	endif
 
 	OUndressScript oundress = ostim.GetUndressScript()
@@ -70,7 +76,7 @@ event OstimStart(string eventname, string strarg, float numarg, form sender)
 		appliedSMPToPlayer = true
 	endif
 
-	if (partnerIsFemale && !isActorSMP(partner))
+	if (partnerIsFemale && !partnerHadSMP)
 		OsexIntegrationMain.Console("OSmp: Applying SMP to " + partner.GetActorBase().GetName() + "...")
 
 		if !appliedSMPToPlayer
@@ -85,7 +91,7 @@ event OstimStart(string eventname, string strarg, float numarg, form sender)
 		endif
 	endif
 
-	if (secondPartner != none && secondPartnerIsFemale && !isActorSMP(secondPartner))
+	if (secondPartner != none && secondPartnerIsFemale && !secondPartnerHadSMP)
 		OsexIntegrationMain.Console("OSmp: Applying SMP to " + secondPartner.GetActorBase().GetName() + "...")
 		MCM.NPCSMP(secondPartner)
 
@@ -95,7 +101,7 @@ event OstimStart(string eventname, string strarg, float numarg, form sender)
 		endif
 	endif
 
-	OsexIntegrationMain.Console("OSmp: Finished applying SMP")
+	OsexIntegrationMain.Console("OSmp: Finished!")
 endevent
 
 event OstimThirdJoin(string eventname, string strarg, float numarg, form sender)
@@ -114,10 +120,11 @@ event OstimThirdJoin(string eventname, string strarg, float numarg, form sender)
 	secondPartner = actors[2]
 
 	secondPartnerIsFemale = ostim.isFemale(secondPartner)
+	secondPartnerHadSMP = isActorSMP(secondPartner)
 
 	OUndressScript oundress = ostim.GetUndressScript()
 
-	if (secondPartnerIsFemale && !isActorSMP(secondPartner))
+	if (secondPartnerIsFemale && !secondPartnerHadSMP)
 		OsexIntegrationMain.Console("OSmp: Applying SMP to " + secondPartner.GetActorBase().GetName() + "...")
 		MCM.NPCSMP(secondPartner)
 
@@ -131,7 +138,7 @@ event OstimThirdJoin(string eventname, string strarg, float numarg, form sender)
 endevent
 
 event OstimThirdLeave(string eventname, string strarg, float numarg, form sender)
-	if (secondPartnerIsFemale && isActorSMP(secondPartner))
+	if (secondPartnerIsFemale && (!toggleKeepNPCSMP || !secondPartnerHadSMP) && isActorSMP(secondPartner))
 		OsexIntegrationMain.Console("OSmp: Removing SMP from " + secondPartner.GetActorBase().GetName() + "...")
 		MCM.NPCSMP(secondPartner)
 		OsexIntegrationMain.Console("OSmp: SMP cleaned from " + secondPartner.GetActorBase().GetName())
@@ -166,24 +173,22 @@ event OstimEnd(string eventname, string strarg, float numarg, form sender)
 		return
 	endif
 
-	OsexIntegrationMain.Console("OSmp: Cleaning SMP...")
+	OsexIntegrationMain.Console("OSmp: Checking if any actors need SMP cleaning...")
 
 	if (playerIsFemale && !toggleKeepPlayerSMP && isPlayerSMP())
 		OsexIntegrationMain.Console("OSmp: Removing SMP from player character...")
 		MCM.PlayerSMP()
 	endif
 
-	if (partnerIsFemale && isActorSMP(partner))
+	if (partnerIsFemale && (!toggleKeepNPCSMP || !partnerHadSMP) && isActorSMP(partner))
 		OsexIntegrationMain.Console("OSmp: Removing SMP from " + partner.GetActorBase().GetName() + "...")
 		MCM.NPCSMP(partner)
 	endif
 
-	if (secondPartner != none && secondPartnerIsFemale && isActorSMP(secondPartner))
+	if (secondPartner != none && secondPartnerIsFemale && (!toggleKeepNPCSMP || !secondPartnerHadSMP) && isActorSMP(secondPartner))
 		OsexIntegrationMain.Console("OSmp: Removing SMP from " + secondPartner.GetActorBase().GetName() + "...")
 		MCM.NPCSMP(secondPartner)
 	endif
-
-	OsexIntegrationMain.Console("OSmp: SMP cleaned!")
 endevent
 
 bool function isPlayerSMP()
@@ -258,3 +263,4 @@ actor property playerref auto
 mus3baddonmcm property MCM auto
 bool property toggleDisableOSmp = false auto
 bool property toggleKeepPlayerSMP = true auto
+bool property toggleKeepNPCSMP = true auto
