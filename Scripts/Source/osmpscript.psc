@@ -7,8 +7,6 @@ bool playerIsFemale = false
 bool partnerIsFemale = false
 bool secondPartnerIsFemale = false
 
-bool undressAtAnimStart = true
-
 bool partnerHadSMP = false
 bool secondPartnerHadSMP = false
 
@@ -21,14 +19,18 @@ armor SMPslot60
 
 event oninit()
 	ostim = OUtils.GetOStim()
+
 	registerForModEvent("ostim_start", "OstimStart")
+	registerForModEvent("ostim_prestart", "OstimPreStart")
 	registerformodevent("ostim_thirdactor_join", "OstimThirdJoin")
 	registerformodevent("ostim_thirdactor_leave", "OstimThirdLeave")
 	registerformodevent("ostim_end", "OstimEnd")
+
+	ostimPreStartRegistered = true
 endevent
 
 
-event OstimStart(string eventname, string strarg, float numarg, form sender)
+function sceneStartProcedures()
 	; if OSmp is disabled in MCM, don't run this event
 	if !ostim.isPlayerInvolved() || toggleDisableOSmp
 		return
@@ -57,46 +59,36 @@ event OstimStart(string eventname, string strarg, float numarg, form sender)
 		secondPartnerHadSMP = isActorSMP(secondPartner)
 	endif
 
-	OUndressScript oundress = ostim.GetUndressScript()
-	undressAtAnimStart = ostim.AlwaysUndressAtAnimStart
-
 	if (partnerIsFemale && !partnerHadSMP)
 		EquipSmpForActor(partner)
-
-		if undressAtAnimStart
-			form[] partnerClothes = oundress.storeequipmentforms(partner, true)
-			oundress.UnequipForms(partner, partnerClothes)
-		endif
 	endif
 
 	if (secondPartner != none && secondPartnerIsFemale && !secondPartnerHadSMP)
 		EquipSmpForActor(secondPartner)
-
-		if undressAtAnimStart
-			form[] secondPartnerClothes = oundress.storeequipmentforms(secondPartner, true)
-			oundress.UnequipForms(secondPartner, secondPartnerClothes)
-		endif
 	endif
 
 	if (playerIsFemale && !playerHadSMP)
-		OsexIntegrationMain.Console("OSmp: Applying SMP to player character ...")
-
-		MCM.PlayerSMP()
-
-		OsexIntegrationMain.Console("OSmp: SMP applied to player character")
-	endif
-
-	; we must toggle freecam off and on for SMP to properly apply to player character
-	; only if user set the scene to start in freecam in OStim MCM
-	; I have no idea why this is needed
-	; in my tests, this was also needed outside of OStim scenes, SMP won't apply properly if you're in freecam
-	; it is most likely a bug with 3BA/BHUNP SMP application, nothing I can do currently besides this freecam hack
-	if playerIsFemale && !playerHadSMP && ostim.UseFreeCam && OSANative.IsFreeCam()
-		ostim.ToggleFreeCam(false)
-		ostim.ToggleFreeCam(true)
+		EquipSmpForPlayer()
 	endif
 
 	OsexIntegrationMain.Console("OSmp: Finished!")
+endfunction
+
+
+event OstimPreStart(string eventname, string strarg, float numarg, form sender)
+	sceneStartProcedures()
+endevent
+
+
+event OstimStart(string eventname, string strarg, float numarg, form sender)
+	; wanted to move SMP application to OStim prestart event but due to some bug I couldn't figure out
+	; the reload game event just wouldn't work
+	; so had to do it this rather hacky way...
+	if !ostimPreStartRegistered
+		registerForModEvent("ostim_prestart", "OstimPreStart")
+		ostimPreStartRegistered = true
+		sceneStartProcedures()
+	endif
 endevent
 
 
@@ -111,15 +103,8 @@ event OstimThirdJoin(string eventname, string strarg, float numarg, form sender)
 	secondPartnerIsFemale = ostim.isFemale(secondPartner)
 	secondPartnerHadSMP = isActorSMP(secondPartner)
 
-	OUndressScript oundress = ostim.GetUndressScript()
-
 	if (secondPartnerIsFemale && !secondPartnerHadSMP)
 		EquipSmpForActor(secondPartner)
-
-		if undressAtAnimStart
-			form[] secondPartnerClothes = oundress.storeequipmentforms(secondPartner, true)
-			oundress.UnequipForms(secondPartner, secondPartnerClothes)
-		endif
 	endif
 endevent
 
@@ -223,6 +208,29 @@ bool function isActorSMP(actor partnerSMP)
 endfunction
 
 
+function EquipSmpForPlayer()
+	OsexIntegrationMain.Console("OSmp: Applying SMP to player character ...")
+
+	PM.CBPCPhysicsAccess(PlayerRef, true)
+
+	int PlayerSMPIndex = MCM.PsTIndex
+
+	if MCM.SlotList[PlayerSMPIndex] == MCM.S48
+		PlayerRef.EquipItem(MCM.SMPONObjectP48, true, true)
+	elseIf MCM.SlotList[PlayerSMPIndex] == MCM.S50
+		PlayerRef.EquipItem(MCM.SMPONObjectP50, true, true)
+	elseIf MCM.SlotList[PlayerSMPIndex] == MCM.S51
+		PlayerRef.EquipItem(MCM.SMPONObjectP51, true, true)
+	elseIf MCM.SlotList[PlayerSMPIndex] == MCM.S60
+		PlayerRef.EquipItem(MCM.SMPONObjectP60, true, true)
+	endIf
+
+	PlayerRef.QueueNiNodeUpdate()
+
+	OsexIntegrationMain.Console("OSmp: SMP applied to player character")
+endfunction
+
+
 function EquipSmpForActor(Actor act)
 	OsexIntegrationMain.Console("OSmp: Applying SMP to " + act.GetActorBase().GetName() + "...")
 
@@ -249,18 +257,16 @@ function EquipSmpForActor(Actor act)
 	UpdateNPCSmpArmorForms(cupSizeToUse)
 
 	if MCM.SlotList[MCM.NPCsTIndex] == MCM.S48
-		act.AddItem(SMPslot48 as form, 1, true)
 		act.EquipItem(SMPslot48 as form, true, true)
 	elseIf MCM.SlotList[MCM.NPCsTIndex] == MCM.S50
-		act.AddItem(SMPslot50 as form, 1, true)
 		act.EquipItem(SMPslot50 as form, true, true)
 	elseIf MCM.SlotList[MCM.NPCsTIndex] == MCM.S51
-		act.AddItem(SMPslot51 as form, 1, true)
 		act.EquipItem(SMPslot51 as form, true, true)
 	elseIf MCM.SlotList[MCM.NPCsTIndex] == MCM.S60
-		act.AddItem(SMPslot60 as form, 1, true)
 		act.EquipItem(SMPslot60 as form, true, true)
 	endIf
+
+	act.QueueNiNodeUpdate()
 
 	OsexIntegrationMain.Console("OSmp: SMP applied to " + act.GetActorBase().GetName() + " with cup size " + cupSizeToUse)
 endfunction
@@ -299,6 +305,7 @@ bool property toggleDisableOSmp = false auto
 bool property toggleKeepPlayerSMP = true auto
 bool property toggleKeepNPCSMP = true auto
 bool property toggleAutomaticCup = true auto
+bool property ostimPreStartRegistered auto
 float property aCupMaximumWeight = 25.0 auto
 float property bCupMaximumWeight = 50.0 auto
 float property cCupMaximumWeight = 75.0 auto
