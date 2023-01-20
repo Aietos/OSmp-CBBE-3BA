@@ -8,7 +8,7 @@
     Zip="true">
     <Variables>
         <Variable Name="ModName" Value="OSmp CBBE 3BA"/>
-        <Variable Name="Version" Value="2.1"/>
+        <Variable Name="Version" Value="3.0.0"/>
         <Variable Name="MyProject" Value="."/>
         <Variable Name="Dist" Value="..\dist"/>
     </Variables>
@@ -16,14 +16,14 @@
         <Import>@MyProject\Scripts\Source</Import>
         <Import>@MyProject\Dependencies</Import>
         <Import>https://github.com/MrOctopus/nl_online/tree/main/jcontainersse/source</Import>
+        <Import>https://github.com/VersuchDrei/ConsoleUtilSSE/tree/master/papyrus</Import>
         <Import>https://github.com/eeveelo/PapyrusUtil/tree/master/Scripts/Source</Import>
         <Import>https://github.com/VersuchDrei/OStim/tree/main/Scripts/Source</Import>
-        <Import>https://github.com/CE0/OSA-SE/tree/master/Data/Scripts/Source</Import>
+        <Import>https://github.com/acepleiades/OSA-for-OStim/tree/master/Scripts/Source</Import>
         <Import>https://github.com/Osmosis-Wrench/racemenu-scripts/tree/main/scripts/source</Import>
         <Import>https://github.com/MrOctopus/nl_online/tree/main/skyui/source</Import>
         <Import>https://github.com/MrOctopus/nl_online/tree/main/skse64/source</Import>
         <Import>https://github.com/MrOctopus/nl_online/tree/main/sse/source</Import>
-        <Import>https://github.com/ersh1/Precision/tree/main/scripts/source</Import>
     </Imports>
     <Folders>
         <Folder>@MyProject\Scripts\Source</Folder>

@@ -1,119 +1,121 @@
 Scriptname OSmpScript extends Quest
 
-actor partner
-actor secondPartner
+actor DomActor
+actor SubActor
+actor ThirdActor
 
-bool playerIsFemale = false
-bool partnerIsFemale = false
-bool secondPartnerIsFemale = false
+bool DomActorIsFemale = false
+bool SubActorIsFemale = false
+bool ThirdActorIsFemale = false
 
-bool partnerHadSMP = false
-bool secondPartnerHadSMP = false
+bool DomActorHadSMP = false
+bool SubActorHadSMP = false
+bool ThirdActorHadSMP = false
 
 armor SMPslot48
 armor SMPslot50
 armor SMPslot51
 armor SMPslot60
 
+bool property toggleDisableOSmp = false auto
+bool property toggleKeepPlayerSMP = true auto
+bool property toggleKeepNPCSMP = true auto
+bool property toggleAutomaticCup = true auto
+float property aCupMaximumWeight = 25.0 auto
+float property bCupMaximumWeight = 50.0 auto
+float property cCupMaximumWeight = 75.0 auto
+float property dCupMaximumWeight = 100.0 auto
+
+Actor property PlayerRef auto
+
+OsexIntegrationMain property OStim auto
+
+mus3baddonmcm property MCM auto
+Mus3BPhysicsManager property PM auto
 
 
-event oninit()
-	ostim = OUtils.GetOStim()
+; ███████╗██╗   ██╗███████╗███╗   ██╗████████╗███████╗
+; ██╔════╝██║   ██║██╔════╝████╗  ██║╚══██╔══╝██╔════╝
+; █████╗  ██║   ██║█████╗  ██╔██╗ ██║   ██║   ███████╗
+; ██╔══╝  ╚██╗ ██╔╝██╔══╝  ██║╚██╗██║   ██║   ╚════██║
+; ███████╗ ╚████╔╝ ███████╗██║ ╚████║   ██║   ███████║
+; ╚══════╝  ╚═══╝  ╚══════╝╚═╝  ╚═══╝   ╚═╝   ╚══════╝
 
-	registerForModEvent("ostim_start", "OstimStart")
+
+event OnInit()
+	OStim = OUtils.GetOStim()
+
 	registerForModEvent("ostim_prestart", "OstimPreStart")
+	registerForModEvent("ostim_start", "OstimStart")
 	registerformodevent("ostim_thirdactor_join", "OstimThirdJoin")
 	registerformodevent("ostim_thirdactor_leave", "OstimThirdLeave")
 	registerformodevent("ostim_end", "OstimEnd")
 
-	ostimPreStartRegistered = true
+	PrintToConsole("Installed")
 endevent
 
 
-function sceneStartProcedures()
+event OstimPreStart(string eventname, string strarg, float numarg, form sender)
 	; if OSmp is disabled in MCM, don't run this event
 	if !ostim.isPlayerInvolved() || toggleDisableOSmp
 		return
 	endif
 
-	OsexIntegrationMain.Console("OSmp: Starting...")
+	PrintToConsole("Starting...")
 
-	actor dom = ostim.GetDomActor()
-	actor sub = ostim.GetSubActor()
-	secondPartner = ostim.GetThirdActor()
+	DomActor = OStim.GetActor(0)
+	SubActor = OStim.GetActor(1)
+	ThirdActor = OStim.GetActor(2)
 
-	if dom == PlayerRef
-		partner = sub
-	else
-		partner = dom
+	DomActorHadSMP = isActorSMP(DomActor)
+	DomActorIsFemale = OStim.AppearsFemale(DomActor)
+
+	SubActorHadSMP = isActorSMP(SubActor)
+	SubActorIsFemale = OStim.AppearsFemale(SubActor)
+
+	if ThirdActor != none
+		ThirdActorHadSMP = isActorSMP(ThirdActor)
+		ThirdActorIsFemale = OStim.AppearsFemale(ThirdActor)
 	endif
 
-	bool playerHadSMP = isPlayerSMP()
-	playerIsFemale = ostim.isFemale(PlayerRef)
-
-	partnerIsFemale = ostim.isFemale(partner)
-	partnerHadSMP = isActorSMP(partner)
-
-	if secondPartner != none
-		secondPartnerIsFemale = ostim.isFemale(secondPartner)
-		secondPartnerHadSMP = isActorSMP(secondPartner)
+	if (DomActorIsFemale && !DomActorHadSMP)
+		EquipSmpForActor(DomActor)
 	endif
 
-	if (partnerIsFemale && !partnerHadSMP)
-		EquipSmpForActor(partner)
+	if (SubActor != none && SubActorIsFemale && !SubActorHadSMP)
+		EquipSmpForActor(SubActor)
 	endif
 
-	if (secondPartner != none && secondPartnerIsFemale && !secondPartnerHadSMP)
-		EquipSmpForActor(secondPartner)
+	if (ThirdActor != none && ThirdActorIsFemale && !ThirdActorHadSMP)
+		EquipSmpForActor(ThirdActor)
 	endif
 
-	if (playerIsFemale && !playerHadSMP)
-		EquipSmpForPlayer()
-	endif
-
-	OsexIntegrationMain.Console("OSmp: Finished!")
-endfunction
-
-
-event OstimPreStart(string eventname, string strarg, float numarg, form sender)
-	sceneStartProcedures()
-endevent
-
-
-event OstimStart(string eventname, string strarg, float numarg, form sender)
-	; wanted to move SMP application to OStim prestart event but due to some bug I couldn't figure out
-	; the reload game event just wouldn't work
-	; so had to do it this rather hacky way...
-	if !ostimPreStartRegistered
-		registerForModEvent("ostim_prestart", "OstimPreStart")
-		ostimPreStartRegistered = true
-		sceneStartProcedures()
-	endif
+	PrintToConsole("Finished!")
 endevent
 
 
 event OstimThirdJoin(string eventname, string strarg, float numarg, form sender)
 	; if OSmp is disabled in MCM or player is not in scene, don't run this event
 	; OSmp won't run on NPC scenes
-	if !ostim.isPlayerInvolved() || toggleDisableOSmp
+	if !OStim.isPlayerInvolved() || toggleDisableOSmp
 		return
 	endif
 
-	secondPartner = ostim.GetThirdActor()
-	secondPartnerIsFemale = ostim.isFemale(secondPartner)
-	secondPartnerHadSMP = isActorSMP(secondPartner)
+	ThirdActor = OStim.GetActor(2)
+	ThirdActorIsFemale = OStim.AppearsFemale(ThirdActor)
+	ThirdActorHadSMP = isActorSMP(ThirdActor)
 
-	if (secondPartnerIsFemale && !secondPartnerHadSMP)
-		EquipSmpForActor(secondPartner)
+	if (ThirdActorIsFemale && !ThirdActorHadSMP)
+		EquipSmpForActor(ThirdActor)
 	endif
 endevent
 
 
 event OstimThirdLeave(string eventname, string strarg, float numarg, form sender)
-	if (secondPartnerIsFemale && (!toggleKeepNPCSMP || !secondPartnerHadSMP) && isActorSMP(secondPartner))
-		OsexIntegrationMain.Console("OSmp: Removing SMP from " + partner.GetActorBase().GetName() + "...")
-		MCM.RemoveSMP(secondPartner)
-		OsexIntegrationMain.Console("OSmp: SMP cleaned from " + secondPartner.GetActorBase().GetName())
+	if (ThirdActorIsFemale && (!toggleKeepNPCSMP || !ThirdActorHadSMP) && isActorSMP(ThirdActor))
+		PrintToConsole("Removing SMP from " + ThirdActor.GetActorBase().GetName() + "...")
+		MCM.RemoveSMP(ThirdActor)
+		PrintToConsole("SMP cleaned from " + ThirdActor.GetActorBase().GetName())
 	endif
 endevent
 
@@ -121,49 +123,31 @@ endevent
 event OstimEnd(string eventname, string strarg, float numarg, form sender)
 	; if numArg is not -1, it's a scene running on a subthread, and therefore an NPC scene
 	if (numarg != -1)
-		; a bug in OStim causes actors in main thread to redress if subthread scene ends
-		; so undress them again
-		OUndressScript oundress = ostim.GetUndressScript()
-		if partner != none
-			; wait for the redress to complete
-			Utility.wait(2)
-			; and then undress
-			form[] partnerClothes = oundress.storeequipmentforms(partner, true)
-			oundress.UnequipForms(partner, partnerClothes)
-		endif
-		if secondPartner != none
-			form[] secondPartnerClothes = oundress.storeequipmentforms(secondPartner, true)
-			oundress.UnequipForms(secondPartner, secondPartnerClothes)
-		endif
 		return
 	endif
 
-	; however, there can be an NPC scene in main thread, so this check is also needed
-	; if player is not in scene, skip, OSmp won't run on NPC scenes
-	if !ostim.isPlayerInvolved()
-		return
+	PrintToConsole("Checking if any actors need SMP cleaning...")
+
+	if DomActorIsFemale && isActorSMP(DomActor)
+		RemoveSmpFromActor(DomActor, DomActorHadSMP)
 	endif
 
-	OsexIntegrationMain.Console("OSmp: Checking if any actors need SMP cleaning...")
-
-	if (playerIsFemale && !toggleKeepPlayerSMP && isPlayerSMP())
-		OsexIntegrationMain.Console("OSmp: Removing SMP from player character...")
-		MCM.RemoveSMP(PlayerRef)
-		OsexIntegrationMain.Console("OSmp: SMP cleaned from player character")
+	if SubActor && SubActorIsFemale && isActorSMP(SubActor)
+		RemoveSmpFromActor(SubActor, SubActorHadSMP)
 	endif
 
-	if (partnerIsFemale && (!toggleKeepNPCSMP || !partnerHadSMP) && isActorSMP(partner))
-		OsexIntegrationMain.Console("OSmp: Removing SMP from " + partner.GetActorBase().GetName() + "...")
-		MCM.RemoveSMP(partner)
-		OsexIntegrationMain.Console("OSmp: SMP cleaned from " + partner.GetActorBase().GetName())
-	endif
-
-	if (secondPartner != none && secondPartnerIsFemale && (!toggleKeepNPCSMP || !secondPartnerHadSMP) && isActorSMP(secondPartner))
-		OsexIntegrationMain.Console("OSmp: Removing SMP from " + partner.GetActorBase().GetName() + "...")
-		MCM.RemoveSMP(secondPartner)
-		OsexIntegrationMain.Console("OSmp: SMP cleaned from " + secondPartner.GetActorBase().GetName())
+	if ThirdActor && ThirdActorIsFemale && isActorSMP(ThirdActor)
+		RemoveSmpFromActor(ThirdActor, ThirdActorHadSMP)
 	endif
 endevent
+
+
+; ███████╗███╗   ███╗██████╗     ███████╗██╗   ██╗███╗   ██╗ ██████╗████████╗██╗ ██████╗ ███╗   ██╗███████╗
+; ██╔════╝████╗ ████║██╔══██╗    ██╔════╝██║   ██║████╗  ██║██╔════╝╚══██╔══╝██║██╔═══██╗████╗  ██║██╔════╝
+; ███████╗██╔████╔██║██████╔╝    █████╗  ██║   ██║██╔██╗ ██║██║        ██║   ██║██║   ██║██╔██╗ ██║███████╗
+; ╚════██║██║╚██╔╝██║██╔═══╝     ██╔══╝  ██║   ██║██║╚██╗██║██║        ██║   ██║██║   ██║██║╚██╗██║╚════██║
+; ███████║██║ ╚═╝ ██║██║         ██║     ╚██████╔╝██║ ╚████║╚██████╗   ██║   ██║╚██████╔╝██║ ╚████║███████║
+; ╚══════╝╚═╝     ╚═╝╚═╝         ╚═╝      ╚═════╝ ╚═╝  ╚═══╝ ╚═════╝   ╚═╝   ╚═╝ ╚═════╝ ╚═╝  ╚═══╝╚══════╝
 
 
 bool function isPlayerSMP()
@@ -184,6 +168,10 @@ endfunction
 
 
 bool function isActorSMP(actor partnerSMP)
+	if (partnerSMP == PlayerRef)
+		return isPlayerSMP()
+	endif
+
 	bool isSMP = false
 
 	String partnerName = partnerSMP.GetActorBase().GetName()
@@ -199,9 +187,9 @@ bool function isActorSMP(actor partnerSMP)
 	endif
 
 	if isSMP
-		OsexIntegrationMain.Console("OSmp: " + partnerName + " is already in SMP mode")
+		PrintToConsole(partnerName + " is in SMP mode")
 	else
-		OsexIntegrationMain.Console("OSmp: " + partnerName + " is in CBPC mode")
+		PrintToConsole(partnerName + " is in CBPC mode")
 	endif
 
 	return isSMP
@@ -209,7 +197,7 @@ endfunction
 
 
 function EquipSmpForPlayer()
-	OsexIntegrationMain.Console("OSmp: Applying SMP to player character ...")
+	PrintToConsole("Applying SMP to player character ...")
 
 	PM.CBPCPhysicsAccess(PlayerRef, true)
 
@@ -227,12 +215,17 @@ function EquipSmpForPlayer()
 
 	PlayerRef.QueueNiNodeUpdate()
 
-	OsexIntegrationMain.Console("OSmp: SMP applied to player character")
+	PrintToConsole("SMP applied to player character")
 endfunction
 
 
 function EquipSmpForActor(Actor act)
-	OsexIntegrationMain.Console("OSmp: Applying SMP to " + act.GetActorBase().GetName() + "...")
+	if (act == PlayerRef)
+		EquipSmpForPlayer()
+		return
+	endif
+
+	PrintToConsole("Applying SMP to " + act.GetActorBase().GetName() + "...")
 
 	PM.CBPCPhysicsAccess(act, true)
 
@@ -268,8 +261,38 @@ function EquipSmpForActor(Actor act)
 
 	act.QueueNiNodeUpdate()
 
-	OsexIntegrationMain.Console("OSmp: SMP applied to " + act.GetActorBase().GetName() + " with cup size " + cupSizeToUse)
+	PrintToConsole("SMP applied to " + act.GetActorBase().GetName() + " with cup size " + cupSizeToUse)
 endfunction
+
+
+function RemoveSmpFromActor(Actor act, bool hadSmp)
+	if act == PlayerRef
+		if !toggleKeepPlayerSMP
+			PrintToConsole("Removing SMP from player character...")
+			MCM.RemoveSMP(PlayerRef)
+			PrintToConsole("SMP cleaned from player character")
+		endif
+	else
+		if !toggleKeepNPCSMP || !hadSmp
+			PrintToConsole("Removing SMP from " + act.GetActorBase().GetName() + "...")
+			MCM.RemoveSMP(act)
+			PrintToConsole("SMP cleaned from " + act.GetActorBase().GetName())
+		endif
+	endif
+endfunction
+
+
+; ██╗   ██╗████████╗██╗██╗     ███████╗
+; ██║   ██║╚══██╔══╝██║██║     ██╔════╝
+; ██║   ██║   ██║   ██║██║     ███████╗
+; ██║   ██║   ██║   ██║██║     ╚════██║
+; ╚██████╔╝   ██║   ██║███████╗███████║
+;  ╚═════╝    ╚═╝   ╚═╝╚══════╝╚══════╝
+
+
+function PrintToConsole(String In)
+	MiscUtil.PrintConsole("OSmp: " + In)
+endFunction
 
 
 function UpdateNPCSmpArmorForms(int cupSize)
@@ -295,18 +318,3 @@ function UpdateNPCSmpArmorForms(int cupSize)
 		SMPslot60 = MCM.SMPONObjectFD60
 	endIf
 endfunction
-
-
-OsexIntegrationMain property ostim auto
-actor property playerref auto
-mus3baddonmcm property MCM auto
-Mus3BPhysicsManager property PM auto
-bool property toggleDisableOSmp = false auto
-bool property toggleKeepPlayerSMP = true auto
-bool property toggleKeepNPCSMP = true auto
-bool property toggleAutomaticCup = true auto
-bool property ostimPreStartRegistered auto
-float property aCupMaximumWeight = 25.0 auto
-float property bCupMaximumWeight = 50.0 auto
-float property cCupMaximumWeight = 75.0 auto
-float property dCupMaximumWeight = 100.0 auto
