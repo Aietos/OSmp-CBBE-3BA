@@ -8,7 +8,7 @@
     Zip="true">
     <Variables>
         <Variable Name="ModName" Value="OSmp CBBE 3BA"/>
-        <Variable Name="Version" Value="4.0.0"/>
+        <Variable Name="Version" Value="5.0.0"/>
         <Variable Name="MyProject" Value="."/>
         <Variable Name="Dist" Value="..\dist"/>
     </Variables>
@@ -18,8 +18,7 @@
         <Import>https://github.com/MrOctopus/nl_online/tree/main/jcontainersse/source</Import>
         <Import>https://github.com/VersuchDrei/ConsoleUtilSSE/tree/master/papyrus</Import>
         <Import>https://github.com/eeveelo/PapyrusUtil/tree/master/Scripts/Source</Import>
-        <Import>https://github.com/VersuchDrei/OStim/tree/main/Scripts/Source</Import>
-        <Import>https://github.com/acepleiades/OSA-for-OStim/tree/master/Scripts/Source</Import>
+        <Import>https://github.com/VersuchDrei/OStimNG/tree/main/data/Scripts/Source</Import>
         <Import>https://github.com/Osmosis-Wrench/racemenu-scripts/tree/main/scripts/source</Import>
         <Import>https://github.com/MrOctopus/nl_online/tree/main/skyui/source</Import>
         <Import>https://github.com/MrOctopus/nl_online/tree/main/skse64/source</Import>
